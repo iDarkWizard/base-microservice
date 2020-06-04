@@ -6,8 +6,6 @@ import java.util.UUID;
 import javax.persistence.Column;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
 import javax.persistence.MappedSuperclass;
 
 import org.hibernate.annotations.CreationTimestamp;
@@ -22,7 +20,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @MappedSuperclass
-@Inheritance(strategy = InheritanceType.JOINED)
 public class BaseEntity {
 
 	@Id
