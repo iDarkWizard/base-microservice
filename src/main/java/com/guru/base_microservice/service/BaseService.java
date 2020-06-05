@@ -2,15 +2,22 @@ package com.guru.base_microservice.service;
 
 import java.sql.Timestamp;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Function;
 
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpHeaders;
 
 import com.guru.base_microservice.domain.BaseEntity;
@@ -52,8 +59,10 @@ public class BaseService<DTO extends BaseEntity, ENTITY extends BaseEntity, ID> 
 		return pageableObjectDTO;
 	}
 
-	public Optional<DTO> findOne(ID id, BaseRepository<ENTITY, ID> repo) {
+	public Optional<DTO> findOne(ID id, BaseRepository<ENTITY, ID> repo) throws NoSuchElementException {
 		Optional<ENTITY> optionalObject = repo.findByUuidAndDeactivatedAtIsNull(id);
+		if(!optionalObject.isPresent())
+			throw new NoSuchElementException("Not found");
 		Optional<DTO> optionalObjectDto = optionalObject.map(new Function<ENTITY, DTO>() {
 			@Override
 			public DTO apply(ENTITY entity) {
@@ -111,5 +120,42 @@ public class BaseService<DTO extends BaseEntity, ENTITY extends BaseEntity, ID> 
 		headers.add("Link", link);
 		return headers;
 	}
-
+	
+	public Page<DTO> findAllByColumnAndUuid(String column, UUID uuid, Integer page, Integer per_page, BaseRepository<ENTITY, ID> repo){
+		Page<ENTITY> pageableObject = repo.findAll(this.byColumnNameAndUuid("legalEntityUuid",uuid).and(
+				this.byColumnNameAndValue("deactivatedAt", null)
+				), PageRequest.of(page, per_page));
+		Page<DTO> pageableObjectDTO = pageableObject.map(new Function<ENTITY, DTO>() {
+			@Override
+			public DTO apply(ENTITY entity) {
+				return JacksonUtils.convertValue(entity, dtoType);
+			}
+		});
+		return pageableObjectDTO;
+	}
+	
+	@SuppressWarnings("serial")
+	public Specification<ENTITY> byColumnNameAndUuid(String columnName, UUID value) {
+		return new Specification<ENTITY>() {
+			@Override
+			public Predicate toPredicate(Root<ENTITY> root, CriteriaQuery<?> quert, CriteriaBuilder builder) {
+				if(value == null)
+					return builder.isNull(root.<String>get(columnName));
+				return builder.equal(root.<String>get(columnName), value);
+			}
+		};
+	}
+	
+	@SuppressWarnings("serial")
+	public Specification<ENTITY> byColumnNameAndValue(String columnName, String value) {
+		return new Specification<ENTITY>() {
+			@Override
+			public Predicate toPredicate(Root<ENTITY> root, CriteriaQuery<?> quert, CriteriaBuilder builder) {
+				if(value == null)
+					return builder.isNull(root.<String>get(columnName));
+				return builder.equal(root.<String>get(columnName), value);
+			}
+		};
+	}
+	
 }

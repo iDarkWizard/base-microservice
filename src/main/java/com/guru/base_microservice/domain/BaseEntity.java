@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @MappedSuperclass
-public class BaseEntity {
+public abstract class BaseEntity {
 
 	@Id
 	@GeneratedValue(generator = "UUID")

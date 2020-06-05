@@ -1,6 +1,8 @@
 package com.guru.base_microservice.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
@@ -30,11 +32,11 @@ public abstract class BaseController<DTO extends BaseEntity, ENTITY extends Base
 
 	private Logger logger = LoggerFactory.getLogger(BaseController.class);
 
-	private BaseRepository<ENTITY, ID> repo;
+	protected BaseRepository<ENTITY, ID> repo;
 
 	private final String errorMessage = "An error has occurred.";
 
-	private final BaseService<DTO, ENTITY, ID> service;
+	protected final BaseService<DTO, ENTITY, ID> service;
 
 	public BaseController(BaseRepository<ENTITY, ID> repo, Class<DTO> dtoType, Class<ENTITY> entityType) {
 		this.repo = repo;
@@ -73,6 +75,7 @@ public abstract class BaseController<DTO extends BaseEntity, ENTITY extends Base
 	public @ResponseBody ResponseEntity<?> getPageableObject(
 			@RequestParam(value = "page", defaultValue = "1") @Min(1) Integer page,
 			@RequestParam(value = "per_page", defaultValue = "10") @Max(50) Integer per_page,
+			@RequestParam(required = false) Map<String, String> order,
 			HttpServletRequest request) {
 
 		logger.info("Request to get page : {} per_page : {}", page, per_page);
@@ -103,6 +106,9 @@ public abstract class BaseController<DTO extends BaseEntity, ENTITY extends Base
 			Optional<DTO> object = service.findOne(id, repo);
 
 			return new ResponseEntity<Optional<DTO>>(object, HttpStatus.OK);
+
+		} catch (NoSuchElementException e) {
+			return new ResponseEntity<String>(errorMessage, HttpStatus.NOT_FOUND);
 		} catch (Exception e) {
 
 			logger.error(e.getMessage());
